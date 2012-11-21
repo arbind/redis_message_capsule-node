@@ -1,25 +1,29 @@
+REDIS = require('redis-url')
 node_env = process.env.NODE_ENV || 'development'
 
 class Channel
-  constructor: (@name, @redis_client) ->
+  constructor: (@name, @redisClient) ->
 
   send: (message)->
     payload = 'data': message
-    @redis_client.rpush @name, payload.to_json
-
+    console.log payload
+    console.log (JSON.stringify payload)
+    @redisClient.rpush @name, (JSON.stringify payload), (err, count)->
+      console.log count
 
 class RedisMessageCapsule
   config: {}
 
   constructor: ->
+    console.log "node_env: " + node_env
     dbNumber = 7 if node_env is 'production'
     dbNumber = 8 if node_env is 'development'
     dbNumber = 9 if node_env is 'test'
     dbNumber ||= 9
 
-    @redis_clients = {}
-    @capsule_channels = {}
-    @listener_threads = {}
+    @redisClients = {}
+    @capsuleChannels = {}
+    @listenerThreads = {}
 
     @configuration =
       redisURL: process.env.REDIS_URL || process.env.REDISTOGO_URL || 'redis://127.0.0.1:6379/'
@@ -27,9 +31,34 @@ class RedisMessageCapsule
     @config = @configuration
 
 
-  make_client_key: (url, db_num)-> "#{url}.#{db_num}"
-  make_channel_key: (name, url, db_num)-> "#{name}.#{url}.#{db_num}"
-  make_listener_key: (channels..., url, db_num)-> [ channels..., url, db_num].join('.')
+  makeClientKey: (url, dbNum)-> "#{url}.#{dbNum}"
+  makeChannelKey: (name, url, dbNum)-> "#{name}.#{url}.#{dbNum}"
+  makeListenerKey: (channels..., url, dbNum)-> [ channels..., url, dbNum].join('.')
+
+
+  channel: (name, redisURL=null, dbNumber=-1)->
+    url = redisURL || @config.redisURL
+    dbNum = dbNumber
+    dbNum = @config.redisDBNumber if dbNum < 0
+
+    channelKey = @makeChannelKey(name, url, dbNum)
+    return @capsuleChannels[channelKey] if @capsuleChannels[channelKey]?
+
+    clientKey = @makeClientKey(url, dbNum)
+    redisClient = @redisClients[clientKey]
+
+    unless redisClient?
+      redisClient = REDIS.connect(url)
+      unless redisClient?
+        puts "!!!\n!!! Can not connect to redis server at #{uri}\n!!!"
+        return null
+      console.log "selecting #{dbNum}"
+      redisClient.select dbNum
+      @redisClients[clientKey] = redisClient
+
+    channel = new Channel(name, redisClient)
+    @capsuleChannels[channelKey] = channel
+    channel
 
   # connect to redis
   # if redisURL

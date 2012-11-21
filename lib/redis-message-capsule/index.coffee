@@ -23,18 +23,16 @@ class RedisMessageCapsule
 
     @redisClients = {}
     @capsuleChannels = {}
-    @listenerThreads = {}
+    @listenerClients = {}
 
     @configuration =
       redisURL: process.env.REDIS_URL || process.env.REDISTOGO_URL || 'redis://127.0.0.1:6379/'
       redisDBNumber: dbNumber
     @config = @configuration
 
-
   makeClientKey: (url, dbNum)-> "#{url}.#{dbNum}"
   makeChannelKey: (name, url, dbNum)-> "#{name}.#{url}.#{dbNum}"
-  makeListenerKey: (channels..., url, dbNum)-> [ channels..., url, dbNum].join('.')
-
+  makeListenerKey: (channels, url, dbNum)-> [ channels..., url, dbNum].join('.')
 
   channel: (name, redisURL=null, dbNumber=-1)->
     url = redisURL || @config.redisURL
@@ -50,7 +48,7 @@ class RedisMessageCapsule
     unless redisClient?
       redisClient = REDIS.connect(url)
       unless redisClient?
-        puts "!!!\n!!! Can not connect to redis server at #{uri}\n!!!"
+        console.log "!!!\n!!! Can not connect to redis server at #{uri}\n!!!"
         return null
       console.log "selecting #{dbNum}"
       redisClient.select dbNum
@@ -60,20 +58,44 @@ class RedisMessageCapsule
     @capsuleChannels[channelKey] = channel
     channel
 
-  # connect to redis
-  # if redisURL
-  #   global.redis = require('redis-url').connect(redisURL)
-  #   redis.on 'connect', =>
-  #     redis.send_anyways = true
-  #     console.log "redis: connection established"
-  #     redis.select redisDBNumber, (err, val) => 
-  #       redis.send_anyways = false
-  #       redis.selectedDB = redisDBNumber
-  #       console.log "redis: selected DB ##{redisDBNumber} for #{env}"
-  #       redis.emit 'db-select', redisDBNumber
-  #       unless debug
-  #         redis.keys '*', (err, keys)->
-  #           console.log "redis: #{keys.length} keys present in DB ##{redisDBNumber} "
+  _handleNextMessage: (redisClient, channelsArray, handler)=> # infinite recursion for getting next message
+    redisClient.blpop channelsArray..., 0, (err, channel_element)=>
+      console.log err
+      console.log channel_element
+      channel = channel_element[0]
+      element = channel_element[1]
+      try 
+        payload = (JSON.parse element)
+      catch ignoredException
+        # noop 
+      finally
+        payload ?= {}
+      message = payload.data
+      # fire event on channel
+      console.log "#{channel}: #{message}"
+      handler(message) if handler?()
+      @_handleNextMessage redisClient, channelsArray..., handler
 
+  listen: (channelsArray, cfg={}, handler)->
+    unless handler?
+      handler = cfg
+      cfg = {redisUrl:null, dbNumber:-1}
+    channels = channelsArray if channels instanceof Array
+    channels ?= [ channelsArray ]
+    dbNum = cfg.dbNumber || -1
+    dbNum = @config.redisDBNumber if dbNum < 0
+    url = cfg.redisUrl || @config.redisURL
+    key = @makeListenerKey(channels, url, dbNum)
+    
+    redisClient = @listenerClients[key] || REDIS.connect(url)
+    unless redisClient?
+      console.log "!!!\n!!! Can not connect to redis server at #{uri}\n!!!"
+      return null
+    console.log "selecting #{dbNum}"
+    redisClient.select dbNum
+    console.log "connected!"
+    @listenerClients[key] = redisClient
+    console.log "Listening for messages on #{[channels...].join(', ')} [db: #{dbNum}]"
+    @_handleNextMessage redisClient, channels, handler
 
 module.exports = new RedisMessageCapsule

@@ -139,6 +139,16 @@ Alternatively, you can override these defaults for the redis db when materializi
     capsule = RedisMessageCapsule.materialize_capsule redisURL, dbNumber
 
 
+## Build the gem locally:
+    git clone git@github.com:arbind/redis_message_capsule-gem.git
+    cd redis_message_capsule-gem
+    bundle
+    
+    gem uninstall redis_message_capsule
+    gem build redis_message_capsule.gemspec
+    rake install
+
+
 ## Contributing
 
 1. Fork it

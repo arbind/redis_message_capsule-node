@@ -81,9 +81,9 @@ In ruby window 2 -  listen for dog messages in ruby and emit cat messages:
     end
     # => woof!woof!
     # => bark!bark!
-    // create a cat channel to send messages to node
+    # create a cat channel to send messages to node
     cat = capsule.materialize_channel 'cat'
-    cat.emit 'purrr' // will show up in node window 2 (listening to cat)
+    cat.emit 'purrr' # will show up in node window 2 (listening to cat)
 
 Back in ruby window 1 - send more dog messages:
 

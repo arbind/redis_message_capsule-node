@@ -61,6 +61,8 @@ class ChannelEmitter
         callback(err, count) if callback?
     catch ex
       (callback ex) if callback?
+  send: (message, callback=null)-> @emit(message, callback=null)
+  message: (message, callback=null)-> @emit(message, callback=null)
 
 class ChannelListener
   constructor: (@channelName, @redisClient) ->

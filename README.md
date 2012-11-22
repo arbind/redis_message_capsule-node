@@ -1,6 +1,8 @@
 # RedisMessageCapsule
 
 Send messages between node or rails apps asynchronously (via redis).
+* [report an issue with the ruby version] (https://github.com/arbind/redis_message_capsule/issues)
+* [report an issue with the node version] (https://github.com/arbind/redis_message_capsule-node/issues)
 
 ## Installation (with npm for node) (as a gem for ruby)
 

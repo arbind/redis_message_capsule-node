@@ -8,12 +8,13 @@
     "url": "git@github.com:arbind/redis_message_capsule-node.git"
   },
   "keywords": [
-    "node", 
-    "rails message", 
     "redis", 
-    "asynchronous", 
-    "async", 
+    "message", 
     "event"
+    "async", 
+    "asynchronous", 
+    "rails",
+    "node", 
   ],
   "private": false,
   "main": "./lib/redis-message-capsule/index",

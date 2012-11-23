@@ -14,7 +14,7 @@ class RedisMessageCapsule
 
   @makeCapsuleKey: (url, dbNum)-> "#{url}.#{dbNum}" # class method
 
-  @materializeCapsule: (redisURL=nil, dbNumber=-1)-> # class method
+  @materializeCapsule: (redisURL=null, dbNumber=-1)-> # class method
     url = redisURL || RedisMessageCapsule.configuration.redisURL
     dbNum = dbNumber
     dbNum = RedisMessageCapsule.configuration.dbNumber if dbNum < 0
@@ -29,30 +29,23 @@ class RedisMessageCapsule
 ###
 class Capsule
   constructor: (@redisURL, @dbNumber) ->
-    @channelEmitters = {}
-    @channelListeners = {} # sort of threads, for now they just poll ;)
+    @channels = {}
 
     @redisClient = REDIS.connect(@redisURL)
     @redisClient.select @dbNumber if @redisClient?
     unless @redisClient?
       console.log "!!!\n!!! Can not connect to redis server at #{@redisURL}\n!!!"
 
-  materializeChannel: (channelName) -> @channelEmitters[channelName] ||= new ChannelEmitter(channelName, @redisClient)
+  materializeChannel: (channelName) -> @channels[channelName] ||= new Channel(channelName, @redisClient)
   channel: (channelName) -> materializeChannel(channelName)
   makeChannel: (channelName) -> materializeChannel(channelName)
   createChannel: (channelName) -> materializeChannel(channelName)
 
-  listenFor: (channelName, handler) ->
-    @channelListeners[channelName] ||= new ChannelListener(channelName, @redisClient)
-    @channelListeners[channelName].startListening(handler)
-  on: (channelName, handler) -> @listenFor(channelName, handler)
-  listen: (channelName, handler) -> @listenFor(channelName, handler)
-  listenTo: (channelName, handler) -> @listenFor(channelName, handler)
-
-class ChannelEmitter
+class Channel
   constructor: (@channelName, @redisClient) ->
+    @channelListeners = {} # sort of threads, for now they just poll ;)
 
-  emit: (message, callback=null)->
+  send: (message, callback=null)->
     try
       payload = 'data': message
       payloadJSON = (JSON.stringify payload)
@@ -61,8 +54,12 @@ class ChannelEmitter
         callback(err, count) if callback?
     catch ex
       (callback ex) if callback?
-  send: (message, callback=null)-> @emit(message, callback=null)
-  message: (message, callback=null)-> @emit(message, callback=null)
+  emit: (message, callback=null)-> @send(message, callback=null)
+  message: (message, callback=null)-> @send(message, callback=null)
+
+  register: (handler) ->
+    @channelListeners[@channelName] ||= new ChannelListener(@channelName, @redisClient)
+    @channelListeners[@channelName].startListening(handler)
 
 class ChannelListener
   constructor: (@channelName, @redisClient) ->

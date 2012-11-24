@@ -2,7 +2,7 @@
   "name": "redis-message-capsule",
   "author": "Arbind Thakur <arbind@carbonfive.com>",
   "description": "Send messages between node or rails apps asynchronously (via redis).",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "repository": {
     "type": "git",
     "url": "git@github.com:arbind/redis_message_capsule-node.git"
@@ -10,11 +10,11 @@
   "keywords": [
     "redis", 
     "message", 
-    "event"
+    "event",
     "async", 
     "asynchronous", 
     "rails",
-    "node", 
+    "node"
   ],
   "private": false,
   "main": "./lib/redis-message-capsule/index",

@@ -1,8 +1,8 @@
 {
-  "name": "redis-message-capsule",
+  "name": "redis_message_capsule",
   "author": "Arbind Thakur <arbind@carbonfive.com>",
   "description": "Send messages between node or rails apps asynchronously (via redis).",
-  "version": "0.8.1",
+  "version": "0.8.2",
   "repository": {
     "type": "git",
     "url": "git@github.com:arbind/redis_message_capsule-node.git"
@@ -23,9 +23,10 @@
   },
   "scripts": {
     "test": "cake spec",
-    "build": "coffee --compile ./lib/redis-message-capsule/index -> this aint working!"
+    "build": "coffee --compile  -o lib/ coffee/    <-- This doesnt work? build manually with -w to watch"
   },
   "dependencies": {
+    "fibers": "*",
     "redis-url": "*"
   },
   "devDependencies": {
